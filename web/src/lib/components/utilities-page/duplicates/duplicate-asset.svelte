@@ -1,24 +1,50 @@
 <script lang="ts">
   import Icon from '$lib/components/elements/icon.svelte';
   import { getAssetThumbnailUrl } from '$lib/utils';
-  import { getAssetResolution, getFileSize } from '$lib/utils/asset-utils';
+  import {getAssetResolution, getFileSize, getOldestDate} from '$lib/utils/asset-utils';
   import { getAltText } from '$lib/utils/thumbnail-util';
   import { toTimelineAsset } from '$lib/utils/timeline-util';
   import { type AssetResponseDto, getAllAlbums } from '@immich/sdk';
   import { mdiHeart, mdiImageMultipleOutline, mdiMagnifyPlus } from '@mdi/js';
   import { t } from 'svelte-i18n';
+  import {omit} from "lodash-es";
 
   interface Props {
     asset: AssetResponseDto;
     isSelected: boolean;
     onSelectAsset: (asset: AssetResponseDto) => void;
     onViewAsset: (asset: AssetResponseDto) => void;
+    assets: AssetResponseDto[]; // 传递整个资产数组用于比较
   }
 
-  let { asset, isSelected, onSelectAsset, onViewAsset }: Props = $props();
+  let { asset, isSelected, onSelectAsset, onViewAsset, assets }: Props = $props();
 
   let isFromExternalLibrary = $derived(!!asset.libraryId);
   let assetData = $derived(JSON.stringify(asset, null, 2));
+
+  let isResolutionDifferent = $derived.by(() => {
+    if (!assets || assets.length <= 1) {return false;}
+    const resolution = getAssetResolution(asset);
+    return assets.some(otherAsset =>
+      getAssetResolution(otherAsset) !== resolution
+    );
+  });
+
+  let isFileSizeDifferent = $derived.by(() => {
+    if (!assets || assets.length <= 1) {return false;}
+    const fileSize = getFileSize(asset);
+    return assets.some(otherAsset =>
+      getFileSize(otherAsset) !== fileSize
+    );
+  });
+
+  let isDateDifferent = $derived.by(() => {
+    if (!assets || assets.length <= 1) {return false;}
+    const date = getOldestDate(asset);
+    return assets.some(otherAsset =>
+      getOldestDate(otherAsset) !== date
+    );
+  });
 </script>
 
 <div
@@ -92,8 +118,15 @@
       ? 'text-white dark:text-black'
       : 'dark:text-white'}"
   >
-    <span class="break-all text-center">{asset.originalFileName}</span>
-    <span>{getAssetResolution(asset)} - {getFileSize(asset)}</span>
+    <span class="break-all text-center">
+      {asset.originalPath}
+    </span>
+    <span class="{isResolutionDifferent || isFileSizeDifferent ? 'bg-yellow-300 dark:bg-yellow-600' : ''}">
+      {getAssetResolution(asset)} - {getFileSize(asset)}
+    </span>
+    <span class="{isDateDifferent ? 'bg-yellow-300 dark:bg-yellow-600' : ''}">
+      {new Date(getOldestDate(asset)).toLocaleString()}
+    </span>
     <span>
       {#await getAllAlbums({ assetId: asset.id })}
         {$t('scanning_for_album')}
@@ -104,6 +137,9 @@
           {$t('in_albums', { values: { count: albums.length } })}
         {/if}
       {/await}
+    </span>
+    <span style="word-break: break-all;font-family: 'Courier New', Courier, monospace;">
+      {JSON.stringify(omit(asset, 'originalPath', 'deviceAssetId', 'originalFileName', 'deviceId', 'libraryId', 'id', 'duplicateId', 'thumbhash'), null, 2)}
     </span>
   </div>
 </div>

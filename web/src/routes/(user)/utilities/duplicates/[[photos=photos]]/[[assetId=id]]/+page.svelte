@@ -63,6 +63,12 @@
   let duplicates = $state(data.duplicates);
   const { isViewing: showAssetViewer } = assetViewingStore;
 
+  // 分页相关状态
+  let currentPage = $state(0);
+  const itemsPerPage = 100;
+  let paginatedDuplicates = $derived(duplicates.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage));
+  let totalPages = $derived(Math.ceil(duplicates.length / itemsPerPage));
+
   const correctDuplicatesIndex = (index: number) => {
     return Math.max(0, Math.min(index, duplicates.length - 1));
   };
@@ -129,8 +135,8 @@
   };
 
   const handleDeduplicateAll = async () => {
-    const idsToKeep = duplicates.map((group) => suggestDuplicate(group.assets)).map((asset) => asset?.id);
-    const idsToDelete = duplicates.flatMap((group, i) =>
+    const idsToKeep = paginatedDuplicates.map((group) => suggestDuplicate(group.assets)).map((asset) => asset?.id);
+    const idsToDelete = paginatedDuplicates.flatMap((group, i) =>
       group.assets.map((asset) => asset.id).filter((asset) => asset !== idsToKeep[i]),
     );
 
@@ -153,7 +159,7 @@
           },
         });
 
-        duplicates = [];
+        paginatedDuplicates = [];
 
         deletedNotification(idsToDelete.length);
 
@@ -212,6 +218,27 @@
   const correctDuplicatesIndexAndGo = async (index: number) => {
     page.url.searchParams.set('index', correctDuplicatesIndex(index).toString());
     await goto(`${AppRoute.DUPLICATES}?${page.url.searchParams.toString()}`);
+  };
+
+  // 分页控制函数
+  const goToPreviousPage = () => {
+    if (currentPage > 0) {
+      currentPage--;
+    }
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages - 1) {
+      currentPage++;
+    }
+  };
+
+  const goToFirstPage = () => {
+    currentPage = 0;
+  };
+
+  const goToLastPage = () => {
+    currentPage = totalPages - 1;
   };
 </script>
 
@@ -274,63 +301,77 @@
         />
       </div>
 
-      {#key duplicates[duplicatesIndex].duplicateId}
-        <DuplicatesCompareControl
-          assets={duplicates[duplicatesIndex].assets}
-          onResolve={(duplicateAssetIds, trashIds) =>
-            handleResolve(duplicates[duplicatesIndex].duplicateId, duplicateAssetIds, trashIds)}
-          onStack={(assets) => handleStack(duplicates[duplicatesIndex].duplicateId, assets)}
-        />
-        <div class="max-w-216 mx-auto mb-16">
-          <div class="flex flex-wrap gap-y-6 mb-4 px-6 w-full place-content-end justify-between items-center">
-            <div class="flex text-xs text-black">
-              <Button
-                size="small"
-                leadingIcon={mdiPageFirst}
-                color="primary"
-                class="flex place-items-center rounded-s-full gap-2 px-2 sm:px-4"
-                onclick={handleFirst}
-                disabled={duplicatesIndex === 0}
-              >
-                {$t('first')}
-              </Button>
-              <Button
-                size="small"
-                leadingIcon={mdiChevronLeft}
-                color="primary"
-                class="flex place-items-center rounded-e-full gap-2 px-2 sm:px-4"
-                onclick={handlePrevious}
-                disabled={duplicatesIndex === 0}
-              >
-                {$t('previous')}
-              </Button>
-            </div>
-            <p>{duplicatesIndex + 1}/{duplicates.length.toLocaleString($locale)}</p>
-            <div class="flex text-xs text-black">
-              <Button
-                size="small"
-                trailingIcon={mdiChevronRight}
-                color="primary"
-                class="flex place-items-center rounded-s-full gap-2 px-2 sm:px-4"
-                onclick={handleNext}
-                disabled={duplicatesIndex === duplicates.length - 1}
-              >
-                {$t('next')}
-              </Button>
-              <Button
-                size="small"
-                trailingIcon={mdiPageLast}
-                color="primary"
-                class="flex place-items-center rounded-e-full gap-2 px-2 sm:px-4"
-                onclick={handleLast}
-                disabled={duplicatesIndex === duplicates.length - 1}
-              >
-                {$t('last')}
-              </Button>
-            </div>
+      <!-- 分页控件 -->
+      {#if totalPages > 1}
+        <div class="flex justify-center items-center gap-4 mb-4">
+          <Button
+            leadingIcon={mdiChevronLeft}
+            onclick={goToPreviousPage}
+            disabled={currentPage === 0}
+            size="small"
+          >
+            {$t('previous')}
+          </Button>
+
+          <div class="text-sm">
+            {$t('page_count', { values: { current: currentPage + 1, total: totalPages } })}
           </div>
+
+          <Button
+            trailingIcon={mdiChevronRight}
+            onclick={goToNextPage}
+            disabled={currentPage === totalPages - 1}
+            size="small"
+          >
+            {$t('next')}
+          </Button>
         </div>
-      {/key}
+      {/if}
+
+      <!-- 显示当前页的重复项组 -->
+      {#each paginatedDuplicates as duplicateGroup, i (duplicateGroup.duplicateId)}
+        <div class="mb-8">
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="text-lg font-bold">{$t('duplicate_group')} {currentPage * itemsPerPage + i + 1}</h3>
+            <span class="text-sm bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">
+              {duplicateGroup.assets.length} {$t('assets')}
+            </span>
+          </div>
+          <DuplicatesCompareControl
+            assets={duplicateGroup.assets}
+            onResolve={(duplicateAssetIds, trashIds) =>
+              handleResolve(duplicateGroup.duplicateId, duplicateAssetIds, trashIds)}
+            onStack={(assets) => handleStack(duplicateGroup.duplicateId, assets)}
+          />
+        </div>
+      {/each}
+
+      <!-- 分页控件 (重复以方便用户操作) -->
+      {#if totalPages > 1}
+        <div class="flex justify-center items-center gap-4 mb-4">
+          <Button
+            leadingIcon={mdiChevronLeft}
+            onclick={goToPreviousPage}
+            disabled={currentPage === 0}
+            size="small"
+          >
+            {$t('previous')}
+          </Button>
+
+          <div class="text-sm">
+            {$t('page_count', { values: { current: currentPage + 1, total: totalPages } })}
+          </div>
+
+          <Button
+            trailingIcon={mdiChevronRight}
+            onclick={goToNextPage}
+            disabled={currentPage === totalPages - 1}
+            size="small"
+          >
+            {$t('next')}
+          </Button>
+        </div>
+      {/if}
     {:else}
       <p class="text-center text-lg dark:text-white flex place-items-center place-content-center">
         {$t('no_duplicates_found')}

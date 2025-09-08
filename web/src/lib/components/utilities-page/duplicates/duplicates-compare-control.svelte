@@ -168,6 +168,7 @@
     {#each assets as asset (asset.id)}
       <DuplicateAsset
         {asset}
+        {assets}
         {onSelectAsset}
         isSelected={selectedAssetIds.has(asset.id)}
         onViewAsset={(asset) => setAsset(asset)}

@@ -1,6 +1,7 @@
 import { getExifCount } from '$lib/utils/exif-utils';
 import type { AssetResponseDto } from '@immich/sdk';
 import { sortBy } from 'lodash-es';
+import { getOldestDate } from '$lib/utils/asset-utils';
 
 /**
  * Suggests the best duplicate asset to keep from a list of duplicates.
@@ -24,7 +25,12 @@ export const suggestDuplicate = (assets: AssetResponseDto[]): AssetResponseDto |
   if (duplicateAssets.length >= 2) {
     duplicateAssets = sortBy(duplicateAssets, getExifCount);
   }
-
+  const o = duplicateAssets.at(-1);
+  duplicateAssets = sortBy(duplicateAssets, getOldestDate)
+  if (getOldestDate(o!) !== getOldestDate(duplicateAssets.at(0)!)) {
+    console.error('gauch', o!.originalPath);
+    return duplicateAssets.at(0);
+  }
   // Return the last asset in the list
-  return duplicateAssets.pop();
+  return o;
 };

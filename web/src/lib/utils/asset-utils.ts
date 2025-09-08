@@ -42,6 +42,7 @@ import { DateTime } from 'luxon';
 import { t } from 'svelte-i18n';
 import { get } from 'svelte/store';
 import { handleError } from './handle-error';
+import { pick } from 'lodash-es';
 
 export const addAssetsToAlbum = async (albumId: string, assetIds: string[], showNotification = true) => {
   const result = await addAssets({
@@ -341,6 +342,16 @@ export function getAssetResolution(asset: AssetResponseDto): string {
   }
 
   return `${width} x ${height}`;
+}
+
+// 找到时间最靠前的一个
+export function getOldestDate(asset: AssetResponseDto) {
+  const times = pick(asset, [
+    'createdAt', 'fileCreatedAt', "fileModifiedAt",
+    "localDateTime", "updatedAt",
+    'exifInfo.dateTimeOriginal', 'exifInfo.modifyDate']);
+  const date = Object.values(times).filter(Boolean).sort((a, b) => +new Date(a as string) - +new Date(b as string)).shift();
+  return +new Date(date as string);
 }
 
 /**
