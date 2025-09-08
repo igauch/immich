@@ -286,8 +286,8 @@ export class MediaService extends BaseService {
     const thumbnailOptions = { colorspace, processInvalidImages: false, raw: info };
     const promises = [
       this.mediaRepository.generateThumbhash(data, thumbnailOptions),
-      this.mediaRepository.generateThumbnail(data, { ...image.thumbnail, ...thumbnailOptions }, thumbnailPath),
-      this.mediaRepository.generateThumbnail(data, { ...image.preview, ...thumbnailOptions }, previewPath),
+      this.mediaRepository.generateThumbnail(data, { ...image.thumbnail, ...thumbnailOptions, imageProcessor: image.imageProcessor }, thumbnailPath),
+      this.mediaRepository.generateThumbnail(data, { ...image.preview, ...thumbnailOptions, imageProcessor: image.imageProcessor }, previewPath),
     ];
 
     let fullsizePath: string | undefined;
@@ -295,7 +295,7 @@ export class MediaService extends BaseService {
     if (convertFullsize) {
       // convert a new fullsize image from the same source as the thumbnail
       fullsizePath = StorageCore.getImagePath(asset, AssetPathType.FullSize, image.fullsize.format);
-      const fullsizeOptions = { format: image.fullsize.format, quality: image.fullsize.quality, ...thumbnailOptions };
+      const fullsizeOptions = { format: image.fullsize.format, quality: image.fullsize.quality, ...thumbnailOptions, imageProcessor: image.imageProcessor };
       promises.push(this.mediaRepository.generateThumbnail(data, fullsizeOptions, fullsizePath));
     } else if (generateFullsize && extracted && extracted.format === RawExtractedFormat.Jpeg) {
       fullsizePath = StorageCore.getImagePath(asset, AssetPathType.FullSize, extracted.format);
@@ -366,6 +366,7 @@ export class MediaService extends BaseService {
       ),
       processInvalidImages: false,
       size: FACE_THUMBNAIL_SIZE,
+      imageProcessor: image.imageProcessor,
     };
 
     await this.mediaRepository.generateThumbnail(decodedImage, thumbnailOptions, thumbnailPath);

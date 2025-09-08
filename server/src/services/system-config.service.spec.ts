@@ -5,6 +5,7 @@ import {
   Colorspace,
   CQMode,
   ImageFormat,
+  ImageProcessor,
   LogLevel,
   OAuthTokenEndpointAuthMethod,
   QueueName,
@@ -161,6 +162,7 @@ const updatedConfig = Object.freeze<SystemConfig>({
     fullsize: { enabled: false, format: ImageFormat.Jpeg, quality: 80 },
     colorspace: Colorspace.P3,
     extractEmbedded: false,
+    imageProcessor: ImageProcessor.Sharp,
   },
   newVersionCheck: {
     enabled: true,

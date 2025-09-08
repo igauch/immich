@@ -9,6 +9,7 @@ import {
   DatabaseSslMode,
   ExifOrientation,
   ImageFormat,
+  ImageProcessor,
   JobName,
   MemoryType,
   QueueName,
@@ -61,7 +62,9 @@ export interface DecodeToBufferOptions extends DecodeImageOptions {
   orientation?: ExifOrientation;
 }
 
-export type GenerateThumbnailOptions = Pick<ImageOptions, 'format' | 'quality'> & DecodeToBufferOptions;
+export type GenerateThumbnailOptions = Pick<ImageOptions, 'format' | 'quality'> & DecodeToBufferOptions & {
+  imageProcessor?: ImageProcessor;
+};
 
 export type GenerateThumbnailFromBufferOptions = GenerateThumbnailOptions & { raw: RawImageInfo };
 

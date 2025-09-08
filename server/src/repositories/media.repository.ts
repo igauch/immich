@@ -3,11 +3,13 @@ import { ExifDateTime, exiftool, WriteTags } from 'exiftool-vendored';
 import ffmpeg, { FfprobeData } from 'fluent-ffmpeg';
 import { Duration } from 'luxon';
 import fs from 'node:fs/promises';
+import { exec } from 'node:child_process';
+import { promisify } from 'node:util';
 import { Writable } from 'node:stream';
 import sharp from 'sharp';
 import { ORIENTATION_TO_SHARP_ROTATION } from 'src/constants';
 import { Exif } from 'src/database';
-import { Colorspace, LogLevel, RawExtractedFormat } from 'src/enum';
+import { Colorspace, ImageProcessor, LogLevel, RawExtractedFormat } from 'src/enum';
 import { LoggingRepository } from 'src/repositories/logging.repository';
 import {
   DecodeToBufferOptions,
@@ -24,6 +26,7 @@ const probe = (input: string, options: string[]): Promise<FfprobeData> =>
   new Promise((resolve, reject) =>
     ffmpeg.ffprobe(input, options, (error, data) => (error ? reject(error) : resolve(data))),
   );
+const execPromise = promisify(exec);
 sharp.concurrency(0);
 sharp.cache({ files: 0 });
 
@@ -45,6 +48,24 @@ export type ExtractResult = {
 export class MediaRepository {
   constructor(private logger: LoggingRepository) {
     this.logger.setContext(MediaRepository.name);
+    this.checkDarktableAvailability();
+  }
+
+  private darktableAvailable = false;
+
+  private async checkDarktableAvailability() {
+    try {
+      await execPromise('which darktable-cli');
+      this.darktableAvailable = true;
+      this.logger.debug('Darktable CLI is available');
+    } catch (error) {
+      this.darktableAvailable = false;
+      this.logger.debug('Darktable CLI is not available');
+    }
+  }
+
+  isDarktableEnabled(processor: ImageProcessor): boolean {
+    return processor === ImageProcessor.Darktable && this.darktableAvailable;
   }
 
   /**
@@ -126,6 +147,17 @@ export class MediaRepository {
   }
 
   async generateThumbnail(input: string | Buffer, options: GenerateThumbnailOptions, output: string): Promise<void> {
+    // 如果是使用darktable处理RAW文件
+    if (typeof input === 'string' && options.imageProcessor && this.isDarktableEnabled(options.imageProcessor)) {
+      // 检查文件是否是RAW格式
+      const isRaw = await this.isRawFile(input);
+      if (isRaw) {
+        await this.generateThumbnailWithDarktable(input, options, output);
+        return;
+      }
+    }
+
+    // 否则使用默认的sharp处理
     await this.getImageDecodingPipeline(input, options)
       .toFormat(options.format, {
         quality: options.quality,
@@ -133,6 +165,51 @@ export class MediaRepository {
         chromaSubsampling: options.quality >= 80 ? '4:4:4' : '4:2:0',
       })
       .toFile(output);
+  }
+
+  private async isRawFile(filePath: string): Promise<boolean> {
+    try {
+      const { stdout } = await execPromise(`file --mime-type -b "${filePath}"`);
+      const mimeType = stdout.trim();
+      // 常见的RAW文件MIME类型
+      return mimeType.includes('x-raw') || 
+             mimeType.includes('raw-image') || 
+             // 也可以根据文件扩展名判断
+             ['.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2', '.pef', '.raf', '.sr2'].some(ext => 
+               filePath.toLowerCase().endsWith(ext)
+             );
+    } catch (error) {
+        this.logger.warn(`Failed to check if file is RAW: ${error instanceof Error ? error.message : String(error)}`);
+        return false;
+      }
+  }
+
+  private async generateThumbnailWithDarktable(input: string, options: GenerateThumbnailOptions, output: string): Promise<void> {
+    try {
+      this.logger.debug(`Generating thumbnail with darktable for ${input}`);
+      
+      // 创建临时文件用于darktable处理
+      const tempXmp = `${output}.xmp`;
+      
+      // 构建darktable-cli命令
+      // 格式: darktable-cli [input] [xmp] [output] --width [width] --height [height] --hq true
+      const cmd = `darktable-cli "${input}" "${tempXmp}" "${output}" --width ${options.size} --height ${options.size} --hq true`;
+      
+      await execPromise(cmd);
+      
+      // 删除临时xmp文件
+      try {
+        await fs.unlink(tempXmp);
+      } catch (e) {
+        // 忽略删除失败
+      }
+      
+      this.logger.debug(`Thumbnail generated with darktable: ${output}`);
+    } catch (error) {
+      this.logger.error(`Failed to generate thumbnail with darktable: ${error instanceof Error ? error.message : String(error)}`);
+      // 如果darktable处理失败，回退到sharp处理
+      throw error;
+    }
   }
 
   private getImageDecodingPipeline(input: string | Buffer, options: DecodeToBufferOptions) {

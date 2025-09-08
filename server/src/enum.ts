@@ -401,6 +401,11 @@ export enum Colorspace {
   P3 = 'p3',
 }
 
+export enum ImageProcessor {
+  Sharp = 'sharp',
+  Darktable = 'darktable',
+}
+
 export enum ImageFormat {
   Jpeg = 'jpeg',
   Webp = 'webp',

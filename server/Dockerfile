@@ -42,6 +42,11 @@ WORKDIR /workspaces/immich
 
 FROM dev-container-server AS dev-container-mobile
 USER root
+# Install darktable for image processing
+RUN apt-get update && \
+  apt-get install -y darktable --no-install-recommends && \
+  rm -rf /var/lib/apt/lists/*
+
 # Enable multiarch for arm64 if necessary
 RUN if [ "$(dpkg --print-architecture)" = "arm64" ]; then \
   dpkg --add-architecture amd64 && \

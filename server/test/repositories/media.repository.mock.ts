@@ -1,6 +1,7 @@
 import { MediaRepository } from 'src/repositories/media.repository';
 import { RepositoryInterface } from 'src/types';
 import { Mocked, vitest } from 'vitest';
+import { ImageProcessor } from '../../src/enum';
 
 export const newMediaRepositoryMock = (): Mocked<RepositoryInterface<MediaRepository>> => {
   return {
@@ -12,5 +13,6 @@ export const newMediaRepositoryMock = (): Mocked<RepositoryInterface<MediaReposi
     probe: vitest.fn(),
     transcode: vitest.fn(),
     getImageDimensions: vitest.fn(),
+    isDarktableEnabled: vitest.fn<(processor: ImageProcessor) => boolean>(),
   };
 };

@@ -43,7 +43,7 @@ services:
       - app-node_modules:/usr/src/app/node_modules
       - sveltekit:/usr/src/app/web/.svelte-kit
       - coverage:/usr/src/app/web/coverage
-      - ${EXTERNAL_PATH}:${EXTERNAL_PATH}
+      - ${EXTERNAL_PATH}:/ext-libary-files
     env_file:
       - .env
     environment:
@@ -164,25 +164,25 @@ services:
       - 5432:5432
     shm_size: 128mb
   # set IMMICH_TELEMETRY_INCLUDE=all in .env to enable metrics
-#  immich-prometheus:
-#    container_name: immich_prometheus
-#    ports:
-#      - 9090:9090
-#    image: prom/prometheus
-#    volumes:
-#      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-#      - prometheus-data:/prometheus
+  #  immich-prometheus:
+  #    container_name: immich_prometheus
+  #    ports:
+  #      - 9090:9090
+  #    image: prom/prometheus
+  #    volumes:
+  #      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+  #      - prometheus-data:/prometheus
 
   # first login uses admin/admin
   # add data source for http://immich-prometheus:9090 to get started
-#  immich-grafana:
-#    container_name: immich_grafana
-#    command: ['./run.sh', '-disable-reporting']
-#    ports:
-#      - 3008:3008
-#    image: grafana/grafana:10.3.3-ubuntu
-#    volumes:
-#      - grafana-data:/var/lib/grafana
+  #  immich-grafana:
+  #    container_name: immich_grafana
+  #    command: ['./run.sh', '-disable-reporting']
+  #    ports:
+  #      - 3008:3008
+  #    image: grafana/grafana:10.3.3-ubuntu
+  #    volumes:
+  #      - grafana-data:/var/lib/grafana
 
   init:
     container_name: init

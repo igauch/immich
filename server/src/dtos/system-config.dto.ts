@@ -22,6 +22,7 @@ import {
   CQMode,
   Colorspace,
   ImageFormat,
+  ImageProcessor,
   LogLevel,
   OAuthTokenEndpointAuthMethod,
   QueueName,
@@ -587,6 +588,9 @@ export class SystemConfigImageDto {
 
   @ValidateBoolean()
   extractEmbedded!: boolean;
+
+  @ValidateEnum({ enum: ImageProcessor, name: 'ImageProcessor' })
+  imageProcessor!: ImageProcessor;
 }
 
 class SystemConfigTrashDto {
