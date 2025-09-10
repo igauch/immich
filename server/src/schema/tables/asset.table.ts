@@ -93,6 +93,9 @@ export class AssetTable {
   @Column({ type: 'bytea', index: true })
   checksum!: Buffer; // sha1 checksum
 
+  @Column({ type: 'bytea', index: true })
+  fileHash!: Buffer; // sha1 hash of file content
+
   @ForeignKeyColumn(() => AssetTable, { nullable: true, onUpdate: 'CASCADE', onDelete: 'SET NULL' })
   livePhotoVideoId!: string | null;
 

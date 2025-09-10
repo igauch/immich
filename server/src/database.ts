@@ -105,6 +105,7 @@ export type Memory = {
 export type Asset = {
   id: string;
   checksum: Buffer<ArrayBufferLike>;
+  fileHash?: Buffer<ArrayBufferLike>;
   deviceAssetId: string;
   deviceId: string;
   fileCreatedAt: Date;

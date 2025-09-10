@@ -342,6 +342,7 @@ export class AssetMediaService extends BaseService {
       id: assetId,
 
       checksum: file.checksum,
+      fileHash: file.fileHash,
       originalPath: file.originalPath,
       type: mimeTypes.assetType(file.originalPath),
       originalFileName: file.originalName,
@@ -380,6 +381,7 @@ export class AssetMediaService extends BaseService {
       deviceId: asset.deviceId,
       type: asset.type,
       checksum: asset.checksum,
+      fileHash: asset.fileHash || asset.checksum,
       fileCreatedAt: asset.fileCreatedAt,
       localDateTime: asset.localDateTime,
       fileModifiedAt: asset.fileModifiedAt,
@@ -399,6 +401,7 @@ export class AssetMediaService extends BaseService {
       libraryId: null,
 
       checksum: file.checksum,
+      fileHash: file.fileHash,
       originalPath: file.originalPath,
 
       deviceAssetId: dto.deviceAssetId,

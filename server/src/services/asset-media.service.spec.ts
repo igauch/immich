@@ -30,6 +30,7 @@ const uploadFile = {
     file: {
       uuid: 'random-uuid',
       checksum: Buffer.from('checksum', 'utf8'),
+      fileHash: Buffer.from('file hash', 'utf8'),
       originalPath: '/data/library/admin/image.jpeg',
       originalName: 'image.jpeg',
       size: 1000,
@@ -44,6 +45,7 @@ const uploadFile = {
         uuid: 'random-uuid',
         mimeType: 'image/jpeg',
         checksum: Buffer.from('checksum', 'utf8'),
+        fileHash: Buffer.from('file hash', 'utf8'),
         originalPath: `/data/admin/${filename}`,
         originalName: filename,
         size: 1000,
@@ -316,6 +318,7 @@ describe(AssetMediaService.name, () => {
         originalPath: 'fake_path/asset_1.jpeg',
         mimeType: 'image/jpeg',
         checksum: Buffer.from('file hash', 'utf8'),
+        fileHash: Buffer.from('file hash', 'utf8'),
         originalName: 'asset_1.jpeg',
         size: 42,
       };
@@ -345,6 +348,7 @@ describe(AssetMediaService.name, () => {
         originalPath: 'fake_path/asset_1.jpeg',
         mimeType: 'image/jpeg',
         checksum: Buffer.from('file hash', 'utf8'),
+        fileHash: Buffer.from('file hash', 'utf8'),
         originalName: 'asset_1.jpeg',
         size: 42,
       };
@@ -371,6 +375,7 @@ describe(AssetMediaService.name, () => {
         originalPath: 'fake_path/asset_1.jpeg',
         mimeType: 'image/jpeg',
         checksum: Buffer.from('file hash', 'utf8'),
+        fileHash: Buffer.from('file hash', 'utf8'),
         originalName: 'asset_1.jpeg',
         size: 0,
       };
@@ -398,6 +403,7 @@ describe(AssetMediaService.name, () => {
         originalPath: 'fake_path/asset_1.jpeg',
         mimeType: 'image/jpeg',
         checksum: Buffer.from('file hash', 'utf8'),
+        fileHash: Buffer.from('file hash', 'utf8'),
         originalName: 'asset_1.jpeg',
         size: 0,
       };

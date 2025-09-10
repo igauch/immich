@@ -388,11 +388,16 @@ export class LibraryService extends BaseService {
   private async processEntity(filePath: string, ownerId: string, libraryId: string) {
     const assetPath = path.normalize(filePath);
     const stat = await this.storageRepository.stat(assetPath);
+    
+    // Calculate both path-based checksum and file content hash
+    const pathChecksum = this.cryptoRepository.hashSha1(`path:${assetPath}`);
+    const fileHash = await this.cryptoRepository.hashFile(assetPath);
 
     return {
       ownerId,
       libraryId,
-      checksum: this.cryptoRepository.hashSha1(`path:${assetPath}`),
+      checksum: pathChecksum,
+      fileHash,
       originalPath: assetPath,
 
       fileCreatedAt: stat.mtime,

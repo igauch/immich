@@ -402,11 +402,15 @@ export interface ImmichFile extends Express.Multer.File {
   uuid: string;
   /** sha1 hash of file */
   checksum: Buffer;
+  /** sha1 hash of file content */
+  fileHash?: Buffer;
 }
 
 export interface UploadFile {
   uuid: string;
   checksum: Buffer;
+  /** sha1 hash of file content */
+  fileHash: Buffer;
   originalPath: string;
   originalName: string;
   size: number;

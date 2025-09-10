@@ -209,6 +209,7 @@ const assetFactory = (asset: Partial<MapAsset> = {}) => ({
   updateId: newUuidV7(),
   status: AssetStatus.Active,
   checksum: newSha1(),
+  fileHash: newSha1(),
   deviceAssetId: '',
   deviceId: '',
   duplicateId: null,

@@ -68,6 +68,7 @@ const assetResponse: AssetResponseDto = {
   tags: [],
   people: [],
   checksum: 'ZmlsZSBoYXNo',
+  fileHash: 'ZmlsZSBoYXNo',
   isTrashed: false,
   libraryId: 'library-id',
   hasMetadata: true,
@@ -83,6 +84,7 @@ const assetResponseWithoutMetadata = {
   duration: '0:00:00.00000',
   livePhotoVideoId: null,
   hasMetadata: false,
+  fileHash: 'ZmlsZSBoYXNo',
 } as AssetResponseDto;
 
 const albumResponse: AlbumResponseDto = {
@@ -199,6 +201,7 @@ export const sharedLinkStub = {
           type: AssetType.Video,
           originalPath: 'fake_path/jpeg',
           checksum: Buffer.from('file hash', 'utf8'),
+          fileHash: Buffer.from('file hash', 'utf8'),
           fileModifiedAt: today,
           fileCreatedAt: today,
           localDateTime: today,
@@ -326,6 +329,6 @@ export const sharedLinkResponseStub = {
     showMetadata: false,
     slug: null,
     album: { ...albumResponse, startDate: assetResponse.localDateTime, endDate: assetResponse.localDateTime },
-    assets: [{ ...assetResponseWithoutMetadata, exifInfo: undefined }],
+    assets: [{ ...assetResponseWithoutMetadata, exifInfo: undefined, fileHash: 'ZmlsZSBoYXNo' }],
   }),
 };
