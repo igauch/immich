@@ -136,7 +136,8 @@ export class FileUploadInterceptor implements NestInterceptor {
         hash.destroy();
         callback(error);
       } else {
-        callback(null, { ...info, checksum: hash.digest() });
+        const fileHash = hash.digest();
+        callback(null, { ...info, checksum: fileHash, fileHash });
       }
     });
   }

@@ -40,7 +40,8 @@ export class AssetResponseDto extends SanitizedAssetResponseDto {
   @ApiProperty({
     type: 'string',
     format: 'date-time',
-    description: 'The UTC timestamp when the asset was originally uploaded to Immich.',
+    description:
+      'The UTC timestamp when the asset was originally uploaded to Immich.',
     example: '2024-01-15T20:30:00.000Z',
   })
   createdAt!: Date;
@@ -88,6 +89,8 @@ export class AssetResponseDto extends SanitizedAssetResponseDto {
   unassignedFaces?: AssetFaceWithoutPersonResponseDto[];
   /**base64 encoded sha1 hash */
   checksum!: string;
+  /**base64 encoded sha1 hash of file content */
+  fileHash!: string;
   stack?: AssetStackResponseDto | null;
   duplicateId?: string | null;
 
@@ -103,6 +106,7 @@ export type MapAsset = {
   updateId: string;
   status: AssetStatus;
   checksum: Buffer<ArrayBufferLike>;
+  fileHash: Buffer<ArrayBufferLike>;
   deviceAssetId: string;
   deviceId: string;
   duplicateId: string | null;
@@ -223,6 +227,7 @@ export function mapAsset(entity: MapAsset, options: AssetMapOptions = {}): Asset
     people: peopleWithFaces(entity.faces),
     unassignedFaces: entity.faces?.filter((face) => !face.person).map((a) => mapFacesWithoutPerson(a)),
     checksum: hexOrBufferToBase64(entity.checksum)!,
+    fileHash: hexOrBufferToBase64(entity.fileHash)!,
     stack: withStack ? mapStack(entity) : undefined,
     isOffline: entity.isOffline,
     hasMetadata: true,

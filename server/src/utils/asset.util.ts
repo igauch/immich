@@ -184,6 +184,7 @@ export function mapToUploadFile(file: ImmichFile): UploadFile {
   return {
     uuid: file.uuid,
     checksum: file.checksum,
+    fileHash: file.fileHash || file.checksum, // Use checksum as fallback if fileHash is not provided
     originalPath: file.path,
     originalName: Buffer.from(file.originalname, 'latin1').toString('utf8'),
     size: file.size,

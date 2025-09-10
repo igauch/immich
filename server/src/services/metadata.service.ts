@@ -604,6 +604,7 @@ export class MetadataService extends BaseService {
             fileModifiedAt: stats.mtime,
             localDateTime: dates.localDateTime,
             checksum,
+            fileHash: checksum,
             ownerId: asset.ownerId,
             originalPath: StorageCore.getAndroidMotionPath(asset, motionAssetId),
             originalFileName: `${parse(asset.originalFileName).name}.mp4`,
