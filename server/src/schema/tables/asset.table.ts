@@ -143,4 +143,16 @@ export class AssetTable {
 
   @Column({ enum: asset_visibility_enum, default: AssetVisibility.Timeline })
   visibility!: Generated<AssetVisibility>;
+
+  @Column({ type: 'boolean', default: false })
+  isEncrypted!: Generated<boolean>;
+
+  @Column({ type: 'character varying', nullable: true })
+  encryptedPath!: string | null;
+
+  @Column({ type: 'character varying', nullable: true })
+  encryptionIv!: string | null;
+
+  @Column({ type: 'character varying', nullable: true })
+  encryptionSalt!: string | null;
 }

@@ -24,6 +24,7 @@ import { AuthDto } from 'src/dtos/auth.dto';
 import { AssetStatus, AssetType, AssetVisibility, CacheControl, JobName, Permission, StorageFolder } from 'src/enum';
 import { AuthRequest } from 'src/middleware/auth.guard';
 import { BaseService } from 'src/services/base.service';
+import { EncryptionService } from './encryption.service';
 import { UploadFile, UploadRequest } from 'src/types';
 import { requireUploadAccess } from 'src/utils/access';
 import { asUploadRequest, getAssetFiles, onBeforeLink } from 'src/utils/asset.util';
@@ -38,6 +39,102 @@ export interface AssetMediaRedirectResponse {
 
 @Injectable()
 export class AssetMediaService extends BaseService {
+  constructor(
+    logger: LoggingRepository,
+    accessRepository: AccessRepository,
+    activityRepository: ActivityRepository,
+    albumRepository: AlbumRepository,
+    albumUserRepository: AlbumUserRepository,
+    apiKeyRepository: ApiKeyRepository,
+    assetRepository: AssetRepository,
+    assetJobRepository: AssetJobRepository,
+    auditRepository: AuditRepository,
+    configRepository: ConfigRepository,
+    cronRepository: CronRepository,
+    cryptoRepository: CryptoRepository,
+    databaseRepository: DatabaseRepository,
+    downloadRepository: DownloadRepository,
+    duplicateRepository: DuplicateRepository,
+    emailRepository: EmailRepository,
+    eventRepository: EventRepository,
+    jobRepository: JobRepository,
+    libraryRepository: LibraryRepository,
+    machineLearningRepository: MachineLearningRepository,
+    mapRepository: MapRepository,
+    mediaRepository: MediaRepository,
+    memoryRepository: MemoryRepository,
+    metadataRepository: MetadataRepository,
+    moveRepository: MoveRepository,
+    notificationRepository: NotificationRepository,
+    oauthRepository: OAuthRepository,
+    partnerRepository: PartnerRepository,
+    personRepository: PersonRepository,
+    processRepository: ProcessRepository,
+    searchRepository: SearchRepository,
+    serverInfoRepository: ServerInfoRepository,
+    sessionRepository: SessionRepository,
+    sharedLinkRepository: SharedLinkRepository,
+    stackRepository: StackRepository,
+    storageRepository: StorageRepository,
+    syncRepository: SyncRepository,
+    syncCheckpointRepository: SyncCheckpointRepository,
+    systemMetadataRepository: SystemMetadataRepository,
+    tagRepository: TagRepository,
+    telemetryRepository: TelemetryRepository,
+    trashRepository: TrashRepository,
+    userRepository: UserRepository,
+    versionRepository: VersionHistoryRepository,
+    viewRepository: ViewRepository,
+    private readonly encryptionService: EncryptionService,
+  ) {
+    super(
+      logger,
+      accessRepository,
+      activityRepository,
+      albumRepository,
+      albumUserRepository,
+      apiKeyRepository,
+      assetRepository,
+      assetJobRepository,
+      auditRepository,
+      configRepository,
+      cronRepository,
+      cryptoRepository,
+      databaseRepository,
+      downloadRepository,
+      duplicateRepository,
+      emailRepository,
+      eventRepository,
+      jobRepository,
+      libraryRepository,
+      machineLearningRepository,
+      mapRepository,
+      mediaRepository,
+      memoryRepository,
+      metadataRepository,
+      moveRepository,
+      notificationRepository,
+      oauthRepository,
+      partnerRepository,
+      personRepository,
+      processRepository,
+      searchRepository,
+      serverInfoRepository,
+      sessionRepository,
+      sharedLinkRepository,
+      stackRepository,
+      storageRepository,
+      syncRepository,
+      syncCheckpointRepository,
+      systemMetadataRepository,
+      tagRepository,
+      telemetryRepository,
+      trashRepository,
+      userRepository,
+      versionRepository,
+      viewRepository,
+    );
+  }
   async getUploadAssetIdByChecksum(auth: AuthDto, checksum?: string): Promise<AssetMediaResponseDto | undefined> {
     if (!checksum) {
       return;
@@ -396,13 +493,35 @@ export class AssetMediaService extends BaseService {
   }
 
   private async create(ownerId: string, dto: AssetMediaCreateDto, file: UploadFile, sidecarFile?: UploadFile) {
+    let encryptionInfo = null;
+    let encryptedFilePath = null;
+
+    // 如果提供了加密密码，则加密文件
+    if (dto.encryptionPassword) {
+      try {
+        const originalPath = file.originalPath;
+        const encryptedFilename = file.uuid + extname(originalPath);
+        encryptedFilePath = this.encryptionService.getEncryptedFilePath(ownerId, encryptedFilename);
+
+        // 执行文件加密
+        encryptionInfo = await this.encryptionService.encryptFile(
+          originalPath,
+          encryptedFilePath,
+          dto.encryptionPassword
+        );
+      } catch (error) {
+        this.logger.error(`Failed to encrypt file: ${error}`);
+        throw new InternalServerErrorException('Failed to encrypt file');
+      }
+    }
+
     const asset = await this.assetRepository.create({
       ownerId,
       libraryId: null,
 
       checksum: file.checksum,
       fileHash: file.fileHash,
-      originalPath: file.originalPath,
+      originalPath: encryptedFilePath || file.originalPath,
 
       deviceAssetId: dto.deviceAssetId,
       deviceId: dto.deviceId,
@@ -411,13 +530,19 @@ export class AssetMediaService extends BaseService {
       fileModifiedAt: dto.fileModifiedAt,
       localDateTime: dto.fileCreatedAt,
 
-      type: mimeTypes.assetType(file.originalPath),
+      type: mimeTypes.assetType(encryptedFilePath || file.originalPath),
       isFavorite: dto.isFavorite,
       duration: dto.duration || null,
       visibility: dto.visibility ?? AssetVisibility.Timeline,
       livePhotoVideoId: dto.livePhotoVideoId,
       originalFileName: dto.filename || file.originalName,
       sidecarPath: sidecarFile?.originalPath,
+      
+      // 设置加密相关字段
+      isEncrypted: !!encryptionInfo,
+      encryptedPath: encryptionInfo?.encryptedPath || null,
+      encryptionIv: encryptionInfo?.iv || null,
+      encryptionSalt: encryptionInfo?.salt || null,
     });
 
     if (dto.metadata) {

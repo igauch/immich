@@ -73,6 +73,11 @@ const assetResponse: AssetResponseDto = {
   libraryId: 'library-id',
   hasMetadata: true,
   visibility: AssetVisibility.Timeline,
+  // 加密相关字段
+  isEncrypted: false,
+  encryptedPath: null,
+  encryptionIv: null,
+  encryptionSalt: null,
 };
 
 const assetResponseWithoutMetadata = {
@@ -260,6 +265,11 @@ export const sharedLinkStub = {
           libraryId: null,
           stackId: null,
           visibility: AssetVisibility.Timeline,
+          // 加密相关字段
+          isEncrypted: false,
+          encryptedPath: null,
+          encryptionIv: null,
+          encryptionSalt: null,
         },
       ],
     },

@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
 import { Selectable } from 'kysely';
+import { ApiProperty } from '@nestjs/swagger';
 import { AssetFace, AssetFile, Exif, Stack, Tag, User } from 'src/database';
 import { PropertyLifecycle } from 'src/decorators';
 import { AuthDto } from 'src/dtos/auth.dto';
@@ -15,6 +15,7 @@ import { UserResponseDto, mapUser } from 'src/dtos/user.dto';
 import { AssetStatus, AssetType, AssetVisibility } from 'src/enum';
 import { hexOrBufferToBase64 } from 'src/utils/bytes';
 import { mimeTypes } from 'src/utils/mime-types';
+import { ensureAssetEncryptionFields } from 'src/utils/asset-utils';
 import { ValidateEnum } from 'src/validation';
 
 export class SanitizedAssetResponseDto {
@@ -96,6 +97,16 @@ export class AssetResponseDto extends SanitizedAssetResponseDto {
 
   @PropertyLifecycle({ deprecatedAt: 'v1.113.0' })
   resized?: boolean;
+
+  // 加密相关字段
+  @ApiProperty({ type: Boolean, nullable: true })
+  isEncrypted?: boolean;
+  @ApiProperty({ type: String, nullable: true })
+  encryptedPath?: string | null;
+  @ApiProperty({ type: String, nullable: true })
+  encryptionIv?: string | null;
+  @ApiProperty({ type: String, nullable: true })
+  encryptionSalt?: string | null;
 }
 
 export type MapAsset = {
@@ -134,6 +145,11 @@ export type MapAsset = {
   tags?: Tag[];
   thumbhash: Buffer<ArrayBufferLike> | null;
   type: AssetType;
+  // 加密相关字段
+  isEncrypted?: boolean;
+  encryptedPath?: string | null;
+  encryptionIv?: string | null;
+  encryptionSalt?: string | null;
 };
 
 export class AssetStackResponseDto {
@@ -184,54 +200,62 @@ const mapStack = (entity: { stack?: Stack | null }) => {
 
 export function mapAsset(entity: MapAsset, options: AssetMapOptions = {}): AssetResponseDto {
   const { stripMetadata = false, withStack = false } = options;
+  
+  // 确保资产对象包含加密相关字段
+  const assetWithEncryption = ensureAssetEncryptionFields(entity);
 
   if (stripMetadata) {
     const sanitizedAssetResponse: SanitizedAssetResponseDto = {
-      id: entity.id,
-      type: entity.type,
-      originalMimeType: mimeTypes.lookup(entity.originalFileName),
-      thumbhash: entity.thumbhash ? hexOrBufferToBase64(entity.thumbhash) : null,
-      localDateTime: entity.localDateTime,
-      duration: entity.duration ?? '0:00:00.00000',
-      livePhotoVideoId: entity.livePhotoVideoId,
+      id: assetWithEncryption.id,
+      type: assetWithEncryption.type,
+      originalMimeType: mimeTypes.lookup(assetWithEncryption.originalFileName),
+      thumbhash: assetWithEncryption.thumbhash ? hexOrBufferToBase64(assetWithEncryption.thumbhash) : null,
+      localDateTime: assetWithEncryption.localDateTime,
+      duration: assetWithEncryption.duration ?? '0:00:00.00000',
+      livePhotoVideoId: assetWithEncryption.livePhotoVideoId,
       hasMetadata: false,
     };
     return sanitizedAssetResponse as AssetResponseDto;
   }
 
   return {
-    id: entity.id,
-    createdAt: entity.createdAt,
-    deviceAssetId: entity.deviceAssetId,
-    ownerId: entity.ownerId,
-    owner: entity.owner ? mapUser(entity.owner) : undefined,
-    deviceId: entity.deviceId,
-    libraryId: entity.libraryId,
-    type: entity.type,
-    originalPath: entity.originalPath,
-    originalFileName: entity.originalFileName,
-    originalMimeType: mimeTypes.lookup(entity.originalFileName),
-    thumbhash: entity.thumbhash ? hexOrBufferToBase64(entity.thumbhash) : null,
-    fileCreatedAt: entity.fileCreatedAt,
-    fileModifiedAt: entity.fileModifiedAt,
-    localDateTime: entity.localDateTime,
-    updatedAt: entity.updatedAt,
-    isFavorite: options.auth?.user.id === entity.ownerId ? entity.isFavorite : false,
-    isArchived: entity.visibility === AssetVisibility.Archive,
-    isTrashed: !!entity.deletedAt,
-    visibility: entity.visibility,
-    duration: entity.duration ?? '0:00:00.00000',
-    exifInfo: entity.exifInfo ? mapExif(entity.exifInfo) : undefined,
-    livePhotoVideoId: entity.livePhotoVideoId,
-    tags: entity.tags?.map((tag) => mapTag(tag)),
-    people: peopleWithFaces(entity.faces),
-    unassignedFaces: entity.faces?.filter((face) => !face.person).map((a) => mapFacesWithoutPerson(a)),
-    checksum: hexOrBufferToBase64(entity.checksum)!,
-    fileHash: hexOrBufferToBase64(entity.fileHash)!,
-    stack: withStack ? mapStack(entity) : undefined,
-    isOffline: entity.isOffline,
+    id: assetWithEncryption.id,
+    createdAt: assetWithEncryption.createdAt,
+    deviceAssetId: assetWithEncryption.deviceAssetId,
+    ownerId: assetWithEncryption.ownerId,
+    owner: assetWithEncryption.owner ? mapUser(assetWithEncryption.owner) : undefined,
+    deviceId: assetWithEncryption.deviceId,
+    libraryId: assetWithEncryption.libraryId,
+    type: assetWithEncryption.type,
+    originalPath: assetWithEncryption.originalPath,
+    originalFileName: assetWithEncryption.originalFileName,
+    originalMimeType: mimeTypes.lookup(assetWithEncryption.originalFileName),
+    thumbhash: assetWithEncryption.thumbhash ? hexOrBufferToBase64(assetWithEncryption.thumbhash) : null,
+    fileCreatedAt: assetWithEncryption.fileCreatedAt,
+    fileModifiedAt: assetWithEncryption.fileModifiedAt,
+    localDateTime: assetWithEncryption.localDateTime,
+    updatedAt: assetWithEncryption.updatedAt,
+    isFavorite: options.auth?.user.id === assetWithEncryption.ownerId ? assetWithEncryption.isFavorite : false,
+    isArchived: assetWithEncryption.visibility === AssetVisibility.Archive,
+    isTrashed: !!assetWithEncryption.deletedAt,
+    visibility: assetWithEncryption.visibility,
+    duration: assetWithEncryption.duration ?? '0:00:00.00000',
+    exifInfo: assetWithEncryption.exifInfo ? mapExif(assetWithEncryption.exifInfo) : undefined,
+    livePhotoVideoId: assetWithEncryption.livePhotoVideoId,
+    tags: assetWithEncryption.tags?.map((tag) => mapTag(tag)),
+    people: peopleWithFaces(assetWithEncryption.faces),
+    unassignedFaces: assetWithEncryption.faces?.filter((face) => !face.person).map((a) => mapFacesWithoutPerson(a)),
+    checksum: hexOrBufferToBase64(assetWithEncryption.checksum)!, 
+    fileHash: hexOrBufferToBase64(assetWithEncryption.fileHash)!, 
+    stack: withStack ? mapStack(assetWithEncryption) : undefined,
+    isOffline: assetWithEncryption.isOffline,
     hasMetadata: true,
-    duplicateId: entity.duplicateId,
+    duplicateId: assetWithEncryption.duplicateId,
     resized: true,
+    // 加密相关字段
+    isEncrypted: assetWithEncryption.isEncrypted,
+    encryptedPath: assetWithEncryption.encryptedPath,
+    encryptionIv: assetWithEncryption.encryptionIv,
+    encryptionSalt: assetWithEncryption.encryptionSalt,
   };
 }
