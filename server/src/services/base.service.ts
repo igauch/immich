@@ -53,6 +53,7 @@ import { ViewRepository } from 'src/repositories/view-repository';
 import { UserTable } from 'src/schema/tables/user.table';
 import { AccessRequest, checkAccess, requireAccess } from 'src/utils/access';
 import { getConfig, updateConfig } from 'src/utils/config';
+import { EncryptionRepository } from 'src/repositories/encryption.repository';
 
 export const BASE_SERVICE_DEPENDENCIES = [
   LoggingRepository,
@@ -100,6 +101,7 @@ export const BASE_SERVICE_DEPENDENCIES = [
   UserRepository,
   VersionHistoryRepository,
   ViewRepository,
+  EncryptionRepository,
 ];
 
 @Injectable()
@@ -152,6 +154,7 @@ export class BaseService {
     protected userRepository: UserRepository,
     protected versionRepository: VersionHistoryRepository,
     protected viewRepository: ViewRepository,
+    protected encryptionRepository: EncryptionRepository,
   ) {
     this.logger.setContext(this.constructor.name);
     this.storageCore = StorageCore.create(

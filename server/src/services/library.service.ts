@@ -25,107 +25,9 @@ import { BaseService } from 'src/services/base.service';
 import { JobOf } from 'src/types';
 import { mimeTypes } from 'src/utils/mime-types';
 import { handlePromiseError } from 'src/utils/misc';
-import { EncryptionService } from './encryption.service';
 
 @Injectable()
 export class LibraryService extends BaseService {
-  constructor(
-    logger: LoggingRepository,
-    accessRepository: AccessRepository,
-    activityRepository: ActivityRepository,
-    albumRepository: AlbumRepository,
-    albumUserRepository: AlbumUserRepository,
-    apiKeyRepository: ApiKeyRepository,
-    assetRepository: AssetRepository,
-    assetJobRepository: AssetJobRepository,
-    auditRepository: AuditRepository,
-    configRepository: ConfigRepository,
-    cronRepository: CronRepository,
-    cryptoRepository: CryptoRepository,
-    databaseRepository: DatabaseRepository,
-    downloadRepository: DownloadRepository,
-    duplicateRepository: DuplicateRepository,
-    emailRepository: EmailRepository,
-    eventRepository: EventRepository,
-    jobRepository: JobRepository,
-    libraryRepository: LibraryRepository,
-    machineLearningRepository: MachineLearningRepository,
-    mapRepository: MapRepository,
-    mediaRepository: MediaRepository,
-    memoryRepository: MemoryRepository,
-    metadataRepository: MetadataRepository,
-    moveRepository: MoveRepository,
-    notificationRepository: NotificationRepository,
-    oauthRepository: OAuthRepository,
-    partnerRepository: PartnerRepository,
-    personRepository: PersonRepository,
-    processRepository: ProcessRepository,
-    searchRepository: SearchRepository,
-    serverInfoRepository: ServerInfoRepository,
-    sessionRepository: SessionRepository,
-    sharedLinkRepository: SharedLinkRepository,
-    stackRepository: StackRepository,
-    storageRepository: StorageRepository,
-    syncRepository: SyncRepository,
-    syncCheckpointRepository: SyncCheckpointRepository,
-    systemMetadataRepository: SystemMetadataRepository,
-    tagRepository: TagRepository,
-    telemetryRepository: TelemetryRepository,
-    trashRepository: TrashRepository,
-    userRepository: UserRepository,
-    versionRepository: VersionHistoryRepository,
-    viewRepository: ViewRepository,
-    private readonly encryptionService: EncryptionService,
-  ) {
-    super(
-      logger,
-      accessRepository,
-      activityRepository,
-      albumRepository,
-      albumUserRepository,
-      apiKeyRepository,
-      assetRepository,
-      assetJobRepository,
-      auditRepository,
-      configRepository,
-      cronRepository,
-      cryptoRepository,
-      databaseRepository,
-      downloadRepository,
-      duplicateRepository,
-      emailRepository,
-      eventRepository,
-      jobRepository,
-      libraryRepository,
-      machineLearningRepository,
-      mapRepository,
-      mediaRepository,
-      memoryRepository,
-      metadataRepository,
-      moveRepository,
-      notificationRepository,
-      oauthRepository,
-      partnerRepository,
-      personRepository,
-      processRepository,
-      searchRepository,
-      serverInfoRepository,
-      sessionRepository,
-      sharedLinkRepository,
-      stackRepository,
-      storageRepository,
-      syncRepository,
-      syncCheckpointRepository,
-      systemMetadataRepository,
-      tagRepository,
-      telemetryRepository,
-      trashRepository,
-      userRepository,
-      versionRepository,
-      viewRepository,
-    );
-  }
-
   private watchLibraries = false;
   private lock = false;
   private watchers: Record<string, () => Promise<void>> = {};
@@ -486,13 +388,13 @@ export class LibraryService extends BaseService {
   private async processEntity(filePath: string, ownerId: string, libraryId: string) {
     const assetPath = path.normalize(filePath);
     const stat = await this.storageRepository.stat(assetPath);
-    
+
     // Calculate both path-based checksum and file content hash
     const pathChecksum = this.cryptoRepository.hashSha1(`path:${assetPath}`);
     const fileHash = await this.cryptoRepository.hashFile(assetPath);
 
     // 检查文件是否为加密文件并处理
-    const encryptionInfo = await this.encryptionService.checkAndProcessEncryptedFile(assetPath);
+    const encryptionInfo = this.encryptionRepository.checkAndProcessEncryptedFile(assetPath);
 
     return {
       ownerId,

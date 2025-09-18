@@ -1,4 +1,3 @@
-import { Injectable } from '@nestjs/common';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto';
 import { promisify } from 'node:util';
@@ -11,7 +10,7 @@ import { Injectable } from '@nestjs/common';
 const pipelineAsync = promisify(pipeline);
 
 @Injectable()
-export class EncryptionService {
+export class EncryptionRepository {
   private readonly ENCRYPTED_FOLDER = 'encrypted';
   private readonly IV_LENGTH = 16; // AES block size is 16 bytes
   private readonly SALT_LENGTH = 32;
@@ -44,10 +43,10 @@ export class EncryptionService {
   getEncryptedFilePath(userId: string, filename: string): string {
     const baseFolder = StorageCore.getBaseFolder(StorageFolder.Library);
     const encryptedFolder = join(baseFolder, userId, this.ENCRYPTED_FOLDER);
-    
+
     // 确保文件夹存在
     this.storageCore.ensureFolders(join(encryptedFolder, filename));
-    
+
     return join(encryptedFolder, filename);
   }
 
@@ -66,20 +65,20 @@ export class EncryptionService {
     // 生成密钥和初始化向量
     const iv = randomBytes(this.IV_LENGTH);
     const { key, salt } = this.generateKey(password);
-    
+
     // 创建加密流
     const cipher = createCipheriv('aes-256-cbc', key, iv);
-    
+
     // 确保输出文件夹存在
     this.storageCore.ensureFolders(outputPath);
-    
+
     // 执行加密
     await pipelineAsync(
       createReadStream(inputPath),
       cipher,
       createWriteStream(outputPath)
     );
-    
+
     // 返回加密信息
     return {
       iv: iv.toString('hex'),
@@ -100,16 +99,16 @@ export class EncryptionService {
     // 转换初始化向量和盐值从十六进制字符串到Buffer
     const ivBuffer = Buffer.from(iv, 'hex');
     const saltBuffer = Buffer.from(salt, 'hex');
-    
+
     // 生成密钥
     const { key } = this.generateKey(password, saltBuffer);
-    
+
     // 创建解密流
     const decipher = createDecipheriv('aes-256-cbc', key, ivBuffer);
-    
+
     // 确保输出文件夹存在
     this.storageCore.ensureFolders(outputPath);
-    
+
     // 执行解密
     await pipelineAsync(
       createReadStream(inputPath),
@@ -132,16 +131,16 @@ export class EncryptionService {
    * @param filePath 文件路径
    * @returns 包含加密信息的对象
    */
-  async checkAndProcessEncryptedFile(filePath: string): Promise<{
+  checkAndProcessEncryptedFile(filePath: string): {
     isEncrypted: boolean;
     encryptedPath?: string | null;
     encryptionIv?: string | null;
     encryptionSalt?: string | null;
     originalPath?: string | null;
-  }> {
+  } {
     // 检查文件是否为加密文件
     const isEncrypted = this.isEncryptedFile(filePath);
-    
+
     if (isEncrypted) {
       // 对于加密文件，我们假设它已经有相关的加密信息
       // 在实际实现中，可能需要从文件元数据或数据库中获取加密信息
@@ -154,7 +153,7 @@ export class EncryptionService {
         originalPath: null, // 加密文件没有原始路径，或者需要从其他地方获取
       };
     }
-    
+
     // 非加密文件，返回默认值
     return {
       isEncrypted: false,
