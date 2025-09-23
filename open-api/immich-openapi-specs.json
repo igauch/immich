@@ -11063,6 +11063,10 @@
             "format": "date-time",
             "type": "string"
           },
+          "fileHash": {
+            "description": "base64 encoded sha1 hash of file content",
+            "type": "string"
+          },
           "fileModifiedAt": {
             "description": "The UTC timestamp when the file was last modified on the filesystem. This reflects the last time the physical file was changed, which may be different from when the photo was originally taken.",
             "example": "2024-01-16T10:15:00.000Z",
@@ -11181,6 +11185,7 @@
           "deviceId",
           "duration",
           "fileCreatedAt",
+          "fileHash",
           "fileModifiedAt",
           "hasMetadata",
           "id",
