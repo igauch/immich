@@ -1,8 +1,8 @@
 dev: prepare-volumes
-	@trap 'make dev-down' EXIT; COMPOSE_BAKE=true docker compose -f ./docker/docker-compose.dev.yml up --remove-orphans
+	@trap 'make dev-down' EXIT; COMPOSE_BAKE=true /Applications/Docker.app/Contents/Resources/bin/docker compose -f ./docker/docker-compose.dev.yml up --remove-orphans
 
 dev-down:
-	docker compose -f ./docker/docker-compose.dev.yml down --remove-orphans
+	/Applications/Docker.app/Contents/Resources/bin/docker compose -f ./docker/docker-compose.dev.yml down --remove-orphans
 
 dev-update: prepare-volumes
 	@trap 'make dev-down' EXIT; COMPOSE_BAKE=true docker compose -f ./docker/docker-compose.dev.yml up --build -V --remove-orphans
@@ -23,7 +23,7 @@ e2e-update:
 e2e-down:
 	docker compose -f ./e2e/docker-compose.yml down --remove-orphans
 
-prod: 
+prod:
 	@trap 'make prod-down' EXIT; COMPOSE_BAKE=true docker compose -f ./docker/docker-compose.prod.yml up --build -V --remove-orphans
 
 prod-down:
