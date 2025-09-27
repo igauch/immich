@@ -44,6 +44,15 @@ export class CryptoRepository {
     return createHash('sha1').update(value).digest();
   }
 
+  /**
+   * Generate a combined hash from fileHash and fileCreatedAt
+   * This creates a unique checksum that considers both file content and creation time
+   */
+  hashFileChecksum(fileHash: Buffer, fileCreatedAt: Date): Buffer {
+    const combined = Buffer.concat([fileHash, Buffer.from(fileCreatedAt.toISOString())]);
+    return this.hashSha1(combined);
+  }
+
   hashFile(filepath: string | Buffer): Promise<Buffer> {
     return new Promise<Buffer>((resolve, reject) => {
       const hash = createHash('sha1');

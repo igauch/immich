@@ -389,14 +389,15 @@ export class LibraryService extends BaseService {
     const assetPath = path.normalize(filePath);
     const stat = await this.storageRepository.stat(assetPath);
     
-    // Calculate both path-based checksum and file content hash
-    const pathChecksum = this.cryptoRepository.hashSha1(`path:${assetPath}`);
+    // Calculate file content hash
     const fileHash = await this.cryptoRepository.hashFile(assetPath);
+    // Calculate combined checksum from fileHash and fileCreatedAt
+    const checksum = this.cryptoRepository.hashFileChecksum(fileHash, stat.mtime);
 
     return {
       ownerId,
       libraryId,
-      checksum: pathChecksum,
+      checksum,
       fileHash,
       originalPath: assetPath,
 

@@ -338,10 +338,12 @@ export class AssetMediaService extends BaseService {
     file: UploadFile,
     sidecarPath?: string,
   ): Promise<void> {
+    const checksum = this.cryptoRepository.hashFileChecksum(file.fileHash, dto.fileCreatedAt);
+    
     await this.assetRepository.update({
       id: assetId,
 
-      checksum: file.checksum,
+      checksum,
       fileHash: file.fileHash,
       originalPath: file.originalPath,
       type: mimeTypes.assetType(file.originalPath),
@@ -372,6 +374,8 @@ export class AssetMediaService extends BaseService {
    * and then queues a METADATA_EXTRACTION job.
    */
   private async createCopy(asset: Omit<Asset, 'id'>) {
+    const checksum = this.cryptoRepository.hashFileChecksum(asset.fileHash, asset.fileCreatedAt);
+    
     const created = await this.assetRepository.create({
       ownerId: asset.ownerId,
       originalPath: asset.originalPath,
@@ -380,8 +384,8 @@ export class AssetMediaService extends BaseService {
       deviceAssetId: asset.deviceAssetId,
       deviceId: asset.deviceId,
       type: asset.type,
-      checksum: asset.checksum,
-      fileHash: asset.fileHash || asset.checksum,
+      checksum,
+      fileHash: asset.fileHash,
       fileCreatedAt: asset.fileCreatedAt,
       localDateTime: asset.localDateTime,
       fileModifiedAt: asset.fileModifiedAt,
@@ -396,11 +400,13 @@ export class AssetMediaService extends BaseService {
   }
 
   private async create(ownerId: string, dto: AssetMediaCreateDto, file: UploadFile, sidecarFile?: UploadFile) {
+    const checksum = this.cryptoRepository.hashFileChecksum(file.fileHash, dto.fileCreatedAt);
+    
     const asset = await this.assetRepository.create({
       ownerId,
       libraryId: null,
 
-      checksum: file.checksum,
+      checksum,
       fileHash: file.fileHash,
       originalPath: file.originalPath,
 
