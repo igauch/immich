@@ -96,6 +96,9 @@ export class AssetTable {
   @Column({ type: 'bytea', index: true })
   fileHash!: Buffer; // sha1 hash of file content
 
+  @Column({ type: 'timestamp with time zone', nullable: true })
+  oldestTime!: Timestamp | null;
+
   @ForeignKeyColumn(() => AssetTable, { nullable: true, onUpdate: 'CASCADE', onDelete: 'SET NULL' })
   livePhotoVideoId!: string | null;
 

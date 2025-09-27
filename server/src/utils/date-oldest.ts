@@ -3,7 +3,7 @@
  * @param timeStrings 可能包含多种格式的时间字符串数组
  * @returns 最早时间的字符串。如果无法找到有效时间，返回 null。
  */
-function findEarliestTimeWithMidnightFilter(timeStrings: string[]): string | null {
+export function findEarliestTimeWithMidnightFilter(timeStrings: string[]): string | null {
   if (!timeStrings.length) return null;
 
   // 1. 转换并验证所有输入时间

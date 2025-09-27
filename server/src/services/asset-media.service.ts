@@ -31,6 +31,8 @@ import { isAssetChecksumConstraint } from 'src/utils/database';
 import { getFilenameExtension, getFileNameWithoutExtension, ImmichFileResponse } from 'src/utils/file';
 import { mimeTypes } from 'src/utils/mime-types';
 import { fromChecksum } from 'src/utils/request';
+import { extractTimeFromFilename } from 'src/utils/date-extraction';
+import { findEarliestTimeWithMidnightFilter } from 'src/utils/date-oldest';
 
 export interface AssetMediaRedirectResponse {
   targetSize: AssetMediaSize | 'original';
@@ -339,12 +341,16 @@ export class AssetMediaService extends BaseService {
     sidecarPath?: string,
   ): Promise<void> {
     const checksum = this.cryptoRepository.hashFileChecksum(file.fileHash, dto.fileCreatedAt);
-    
+
+    // 计算 oldestTime
+    const oldestTime = this.calculateOldestTime({ ...dto }, file);
+
     await this.assetRepository.update({
       id: assetId,
 
       checksum,
       fileHash: file.fileHash,
+      oldestTime,
       originalPath: file.originalPath,
       type: mimeTypes.assetType(file.originalPath),
       originalFileName: file.originalName,
@@ -375,7 +381,19 @@ export class AssetMediaService extends BaseService {
    */
   private async createCopy(asset: Omit<Asset, 'id'>) {
     const checksum = this.cryptoRepository.hashFileChecksum(asset.fileHash, asset.fileCreatedAt);
-    
+
+    // Create a mock dto for calculateOldestTime
+    const mockDto = {
+      deviceAssetId: asset.deviceAssetId,
+      deviceId: asset.deviceId,
+      fileCreatedAt: asset.fileCreatedAt,
+      fileModifiedAt: asset.fileModifiedAt,
+      filename: asset.originalFileName,
+    };
+
+    // Calculate oldestTime
+    const oldestTime = this.calculateOldestTime(mockDto, { originalName: asset.originalFileName } as UploadFile);
+
     const created = await this.assetRepository.create({
       ownerId: asset.ownerId,
       originalPath: asset.originalPath,
@@ -386,6 +404,7 @@ export class AssetMediaService extends BaseService {
       type: asset.type,
       checksum,
       fileHash: asset.fileHash,
+      oldestTime,
       fileCreatedAt: asset.fileCreatedAt,
       localDateTime: asset.localDateTime,
       fileModifiedAt: asset.fileModifiedAt,
@@ -401,13 +420,17 @@ export class AssetMediaService extends BaseService {
 
   private async create(ownerId: string, dto: AssetMediaCreateDto, file: UploadFile, sidecarFile?: UploadFile) {
     const checksum = this.cryptoRepository.hashFileChecksum(file.fileHash, dto.fileCreatedAt);
-    
+
+    // 计算 oldestTime
+    const oldestTime = this.calculateOldestTime(dto, file);
+
     const asset = await this.assetRepository.create({
       ownerId,
       libraryId: null,
 
       checksum,
       fileHash: file.fileHash,
+      oldestTime,
       originalPath: file.originalPath,
 
       deviceAssetId: dto.deviceAssetId,
@@ -453,5 +476,44 @@ export class AssetMediaService extends BaseService {
     }
 
     return asset;
+  }
+
+  /**
+   * 计算 oldestTime 字段的值
+   * @param dto AssetMediaCreateDto 对象
+   * @param file UploadFile 对象
+   * @returns oldestTime 的值或 null
+   */
+  private calculateOldestTime(dto: {
+    fileCreatedAt: Date;
+    fileModifiedAt: Date;
+  }, file: UploadFile): Date | null {
+    try {
+      // 收集所有可能的时间值
+      const timeStrings: string[] = [];
+
+      // 添加文件的各种时间属性
+      timeStrings.push(
+        dto.fileCreatedAt.toISOString(),
+        dto.fileModifiedAt.toISOString()
+      );
+
+      // 尝试从文件名中提取时间
+      const timeFromFilename = extractTimeFromFilename(file.originalName);
+      if (timeFromFilename) {
+        timeStrings.push(timeFromFilename.toISOString());
+      }
+
+      // 使用 findEarliestTimeWithMidnightFilter 计算最早时间
+      const oldestTimeString = findEarliestTimeWithMidnightFilter(timeStrings);
+      if (oldestTimeString) {
+        return new Date(oldestTimeString);
+      }
+    } catch (error) {
+      // 如果计算过程中出现错误，返回 null
+      this.logger.warn(`计算 oldestTime 时出错: ${error}`);
+    }
+
+    return null;
   }
 }

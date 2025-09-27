@@ -25,6 +25,8 @@ import { BaseService } from 'src/services/base.service';
 import { JobOf } from 'src/types';
 import { mimeTypes } from 'src/utils/mime-types';
 import { handlePromiseError } from 'src/utils/misc';
+import { extractTimeFromFilename } from 'src/utils/date-extraction';
+import { findEarliestTimeWithMidnightFilter } from 'src/utils/date-oldest';
 
 @Injectable()
 export class LibraryService extends BaseService {
@@ -388,20 +390,36 @@ export class LibraryService extends BaseService {
   private async processEntity(filePath: string, ownerId: string, libraryId: string) {
     const assetPath = path.normalize(filePath);
     const stat = await this.storageRepository.stat(assetPath);
-    
+
     // Calculate file content hash
     const fileHash = await this.cryptoRepository.hashFile(assetPath);
     // Calculate combined checksum from fileHash and fileCreatedAt
     const checksum = this.cryptoRepository.hashFileChecksum(fileHash, stat.mtime);
+
+    // Calculate oldestTime using findEarliestTimeWithMidnightFilter and extractTimeFromFilename
+    const timeStrings: string[] = [];
+    const fileCreatedAt = stat.mtime;
+    timeStrings.push(fileCreatedAt.toISOString(), stat.ctime.toISOString(), stat.birthtime.toISOString(), stat.atime.toISOString());
+
+    // Try to extract time from filename
+    const timeFromFilename = extractTimeFromFilename(parse(assetPath).base);
+    if (timeFromFilename) {
+      timeStrings.push(timeFromFilename.toISOString());
+    }
+
+    // Use findEarliestTimeWithMidnightFilter to calculate the oldest time
+    const oldestTimeString = findEarliestTimeWithMidnightFilter(timeStrings);
+    const oldestTime = oldestTimeString ? new Date(oldestTimeString) : null;
 
     return {
       ownerId,
       libraryId,
       checksum,
       fileHash,
+      oldestTime,
       originalPath: assetPath,
 
-      fileCreatedAt: stat.mtime,
+      fileCreatedAt: fileCreatedAt,
       fileModifiedAt: stat.mtime,
       localDateTime: stat.mtime,
       // TODO: device asset id is deprecated, remove it
