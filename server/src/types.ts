@@ -403,7 +403,7 @@ export interface ImmichFile extends Express.Multer.File {
   /** sha1 hash of file */
   checksum: Buffer;
   /** sha1 hash of file content */
-  fileHash?: Buffer;
+  fileHash: Buffer;
 }
 
 export interface UploadFile {

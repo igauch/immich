@@ -105,7 +105,7 @@ export type Memory = {
 export type Asset = {
   id: string;
   checksum: Buffer<ArrayBufferLike>;
-  fileHash?: Buffer<ArrayBufferLike>;
+  fileHash: Buffer<ArrayBufferLike>;
   deviceAssetId: string;
   deviceId: string;
   fileCreatedAt: Date;
@@ -305,6 +305,7 @@ export const columns = {
     'asset.ownerId',
     'asset.sidecarPath',
     'asset.type',
+    'asset.fileHash',
   ],
   assetFiles: ['asset_file.id', 'asset_file.path', 'asset_file.type'],
   authUser: ['user.id', 'user.name', 'user.email', 'user.isAdmin', 'user.quotaUsageInBytes', 'user.quotaSizeInBytes'],
